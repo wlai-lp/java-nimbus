@@ -312,6 +312,9 @@ public class EncryptedJWTTest {
 	}
 
 
+	// 1. sign the claims in plain text, so it generates a signedJWT
+	// 2. add the JWE encryption header
+	// 3. encrypt JWE with public key and signedJWT as its payload
 	public JWEObject signAndEncrypt(JWTClaimsSet jwtCSInput, RSAPrivateKey tuciPrivateKey, RSAPublicKey lpPublicKey) throws JOSEException, NoSuchAlgorithmException {
 	
 		JWSSigner signer = new RSASSASigner(tuciPrivateKey);
