@@ -1,13 +1,27 @@
 package com.example;
 
 
+import java.io.File;
+import java.io.FileReader;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -15,14 +29,24 @@ import java.util.UUID;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
+
 import com.nimbusds.jose.crypto.*;
 
 import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.bc.BouncyCastleProviderSingleton;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 
 /**
@@ -135,9 +159,18 @@ public class EncryptedJWTTest {
 			publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
 			privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
 
+			String prikey = "";
+			// new
+			// String pubkey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8NfTd/xoKzxNaxmMAVVj0e7AeC8CLGs/tWwTTQqp1xFvzbaGH4ui9ZA9dztAr18QRkIb/0XHD4tm/4cUVCbRSQYbBA3huGNJH7DlK2eNF4vGR4x5vkEjsfkJzDplrqcitQAqjTttFL142/fBNHqfRzEgzC7ZSa99vg+/iuoJcWsiWDHLuouoE7ijf1nhXhPqPfwCQlaU0nV8K/rfNCu5INCuJ5SZsrtx5rK/e+aZo97vObxysQTTEjWzFEAQ9GgyieByPQNw9dpccCuuyonouvuKn79QgiUfLNX+Cl118MWFGS1G3AdCr66mvpruvmFOxCtJWlf2Vge/6KzXXMvAqwIDAQAB";
+			// TU
+			// String pubkey = "MIIBCgKCAQEAxY+KtV1ZV85iJpzxJZLDZWvMeIIYvqYA3tqHy204G08TIaBeI/QGnDaeJnR5nVSBEpSSiafk3VLOxixj8uwTW7wwRts40V3nmZMvotfqK0PXTTzgVFZ1nDlm1TA6gbi9W1rBWjgs5IDPsD5VilETo7DJFRx+nN3JRwloZtKrJETXjbPVGfQVy4aR/OSh1CrtvCOP/URy6hQmtaxV/wjWnx8QC658FWcc7EHsbATJaoX3pXF/tT8VhVTAu53ymEeZnORHRogu+KFVJFNS1ShJtBKwVWiLVRqL6xDRHxbceZEGJHiFvWhn3XP+kqpmosheBU2iJw3IMWqNSup1TvmHcwIDAQAB";
+			// publicKey = (RSAPublicKey) loadPrivateKey(pubkey);
+			// privateKey = (RSAPrivateKey) loadPublicKey(pubkey);
+
+
 		} catch (Exception e) {
 
-			System.out.println("error");
+			System.out.println(e);
 		}
 	}
 
@@ -157,25 +190,39 @@ public class EncryptedJWTTest {
 		Date iat = NOW;
 		String jti = UUID.randomUUID().toString();
 
+		// System.out.println("private key: " + privateKey.);
 
 		JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder().
 			issuer(iss).
-			subject(sub).
-			audience(aud).
-			expirationTime(exp).
-			notBeforeTime(NOW).
-			issueTime(NOW).
-			jwtID(jti).
+			// subject(sub).
+			// audience(aud).
+			// expirationTime(exp).
+			// notBeforeTime(NOW).
+			// issueTime(NOW).
+			// jwtID(jti).
 			build();
 
 
 		// Request JWT encrypted with RSA-OAEP and 128-bit AES/GCM
-		JWEHeader header = new JWEHeader(JWEAlgorithm.RSA_OAEP, EncryptionMethod.A128GCM);
-
-
+		// JWEHeader header = new JWEHeader(JWEAlgorithm.RSA_OAEP, EncryptionMethod.A128GCM);
+		JWEHeader header = new JWEHeader(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A128CBC_HS256);
+		
+		
 		// Create the encrypted JWT object
 		EncryptedJWT jwt = new EncryptedJWT(header, jwtClaims);
 		
+		// ECKey.parseFromPEMEn
+		Path currentRelativePath = Paths.get("");
+		String s = currentRelativePath.toAbsolutePath().toString();
+		System.out.println("Current absolute path is: " + s);
+
+		File file = new File("public.pem");
+		if(file.exists()){
+			System.out.println("i'm reading public.pem");
+		}
+
+		publicKey = readPublicKey(file);
+
 		// Create an encrypter with the specified public RSA key
 		RSAEncrypter encrypter = new RSAEncrypter(publicKey);
 		encrypter.getJCAContext().setProvider(BouncyCastleProviderSingleton.getInstance());
@@ -193,11 +240,21 @@ public class EncryptedJWTTest {
 
 
 		// Create an decrypter with the specified private RSA key
+
+		privateKey = readPrivateKey(new File("private.pem"));
+
 		RSADecrypter decrypter = new RSADecrypter(privateKey);
 		decrypter.getJCAContext().setProvider(BouncyCastleProviderSingleton.getInstance());
 
 		// Decrypt
 		jwt.decrypt(decrypter);
+
+		// String decryptedJwt = jwt.serialize();
+		System.out.println(jwt.getJWTClaimsSet().getIssuer());
+
+
+		
+		
 	}
 	
 	
@@ -217,4 +274,47 @@ public class EncryptedJWTTest {
 		
 		jwt.decrypt(new DirectDecrypter(key));		
 	}
+
+	public RSAPublicKey readPublicKey(File file) throws Exception {
+		KeyFactory factory = KeyFactory.getInstance("RSA");
+	
+		try (FileReader keyReader = new FileReader(file);
+		  PemReader pemReader = new PemReader(keyReader)) {
+	
+			PemObject pemObject = pemReader.readPemObject();
+			byte[] content = pemObject.getContent();
+			X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(content);
+			return (RSAPublicKey) factory.generatePublic(pubKeySpec);
+		}
+	}
+
+	public RSAPrivateKey readPrivateKey(File file) throws Exception {
+		KeyFactory factory = KeyFactory.getInstance("RSA");
+	
+		try (FileReader keyReader = new FileReader(file);
+		  PemReader pemReader = new PemReader(keyReader)) {
+	
+			PemObject pemObject = pemReader.readPemObject();
+			byte[] content = pemObject.getContent();
+			PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(content);
+			return (RSAPrivateKey) factory.generatePrivate(privKeySpec);
+		}
+	}
+
+
+	public JWEObject signAndEncrypt(JWTClaimsSet jwtCSInput, RSAPrivateKey tuciPrivateKey, RSAPublicKey lpPublicKey) throws JOSEException, NoSuchAlgorithmException {
+		String logPrefix = "JWTUtilityManagerBean.signAndEncrypt() ";
+	
+		JWSSigner signer = new RSASSASigner(tuciPrivateKey);
+	
+		SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), jwtCSInput);
+		signedJWT.sign(signer);
+		JWEHeader header = new JWEHeader(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A128CBC_HS256);
+		JWEObject jweObject = new JWEObject(header, new Payload(signedJWT));
+		RSAEncrypter encrypter = new RSAEncrypter(lpPublicKey);
+		jweObject.encrypt(encrypter);		
+		return jweObject;
+	}
+	
+
 }
