@@ -253,6 +253,16 @@ public class EncryptedJWTTest {
 		System.out.println(jwt.getJWTClaimsSet().getIssuer());
 
 
+		// now try mark's routing to see if i can use node-jose to decrypt
+		System.out.println("now trying mark's routing");
+		JWEObject jweObj = signAndEncrypt(jwtClaims, privateKey, publicKey);
+		System.out.println(jweObj.serialize());
+
+		// Parse back
+		jwt = EncryptedJWT.parse(jweObj.serialize());
+		jwt.decrypt(decrypter);
+		System.out.println(jwt.getJWTClaimsSet().getIssuer());
+
 		
 		
 	}
@@ -303,7 +313,6 @@ public class EncryptedJWTTest {
 
 
 	public JWEObject signAndEncrypt(JWTClaimsSet jwtCSInput, RSAPrivateKey tuciPrivateKey, RSAPublicKey lpPublicKey) throws JOSEException, NoSuchAlgorithmException {
-		String logPrefix = "JWTUtilityManagerBean.signAndEncrypt() ";
 	
 		JWSSigner signer = new RSASSASigner(tuciPrivateKey);
 	
